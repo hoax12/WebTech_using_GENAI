@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCU Villains - JavaScript Slideshow</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Creepster&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', monospace;
+            background: radial-gradient(circle at center, #1a0000 0%, #000000 100%);
+            overflow: hidden;
+            height: 100vh;
+            color: white;
+        }
+
+        /* Animated background matrix effect */
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .slideshow-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Main title with glitch effect */
+        .main-title {
+            font-family: 'Creepster', cursive;
+            font-size: 4rem;
+            color: #ff0000;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 0 0 20px #ff0000;
+            position: relative;
+            z-index: 10;
+        }
+
+        .main-title.glitch {
+            animation: glitch 0.3s ease-in-out;
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        /* Slideshow wrapper */
+        .slider-container {
+            position: relative;
+            width: 80%;
+            max-width: 900px;
+            height: 60%;
+            perspective: 1000px;
+        }
+
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(255, 0, 0, 0.3);
+            border: 3px solid #ff0000;
+            opacity: 0;
+            transform: scale(0.8) rotateY(45deg);
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            cursor: pointer;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: scale(1) rotateY(0deg);
+            z-index: 10;
+            box-shadow: 0 35px 70px rgba(255, 0, 0, 0.6);
+        }
+
+        .slide.next {
+            opacity: 0.7;
+            transform: scale(0.9) rotateY(-20deg) translateX(100px);
+        }
+
+        .slide.prev {
+            opacity: 0.7;
+            transform: scale(0.9) rotateY(20deg) translateX(-100px);
+        }
+
+        .slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(0.8) contrast(1.2);
+            transition: filter 0.5s ease;
+        }
+
+        .slide.active img {
+            filter: brightness(1) contrast(1.3) saturate(1.1);
+        }
+
+        /* Villain info overlay */
+        .villain-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+            padding: 30px;
+            transform: translateY(100%);
+            transition: transform 0.6s ease;
+        }
+
+        .slide.active .villain-info {
+            transform: translateY(0);
+        }
+
+        .villain-name {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #ff4444;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        .villain-subtitle {
+            font-size: 1.2rem;
+            color: #cccccc;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        .villain-description {
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #ffffff;
+        }
+
+        /* Control panel */
+        .controls {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .control-btn {
+            padding: 12px 20px;
+            background: rgba(255, 0, 0, 0.2);
+            border: 2px solid #ff0000;
+            color: white;
+            font-family: 'Orbitron', monospace;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 0, 0, 0.5);
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Slide counter with digital display */
+        .slide-counter {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ff0000;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            color: #ff0000;
+            text-shadow: 0 0 10px #ff0000;
+            z-index: 20;
+        }
+
+        /* Progress bar */
+        .progress-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 20;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #ff6666);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Villain selector grid */
+        .villain-grid {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            z-index: 20;
+        }
+
+        .villain-thumb {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #666;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            opacity: 0.6;
+        }
+
+        .villain-thumb:hover {
+            transform: scale(1.2);
+            border-color: #ff0000;
+            opacity: 1;
+        }
+
+        .villain-thumb.active {
+            border-color: #ff0000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+            opacity: 1;
+        }
+
+        .villain-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Sound wave animation */
+        .sound-waves {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 3px;
+            z-index: 20;
+        }
+
+        .wave {
+            width: 4px;
+            height: 20px;
+            background: #ff0000;
+            border-radius: 2px;
+            animation: wave 1.5s ease-in-out infinite;
+        }
+
+        .wave:nth-child(2) { animation-delay: 0.1s; }
+        .wave:nth-child(3) { animation-delay: 0.2s; }
+        .wave:nth-child(4) { animation-delay: 0.3s; }
+        .wave:nth-child(5) { animation-delay: 0.4s; }
+
+        @keyframes wave {
+            0%, 100% { height: 20px; }
+            50% { height: 40px; }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 2.5rem;
+                margin-bottom: 20px;
+            }
+            
+            .slider-container {
+                width: 90%;
+                height: 50%;
+            }
+            
+            .villain-name {
+                font-size: 2rem;
+            }
+            
+            .villain-grid {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 8px;
+            }
+            
+            .villain-thumb {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .controls {
+                bottom: 20px;
+                gap: 15px;
+            }
+            
+            .control-btn {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas class="matrix-bg" id="matrixCanvas"></canvas>
+    
+    <div class="slideshow-container">
+        <h1 class="main-title" id="mainTitle">MCU VILLAINS UNLEASHED</h1>
+        
+        <!-- Slide Counter -->
+        <div class="slide-counter" id="slideCounter">01 / 10</div>
+        
+        <!-- Sound Waves -->
+        <div class="sound-waves" id="soundWaves">
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <div class="wave"></div>
+        </div>
+        
+        <!-- Villain Thumbnail Grid -->
+        <div class="villain-grid" id="villainGrid">
+            <!-- Thumbnails will be generated by JavaScript -->
+        </div>
+        
+        <!-- Main Slideshow -->
+        <div class="slider-container" id="sliderContainer">
+            <!-- Slides will be generated by JavaScript -->
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <!-- Controls -->
+        <div class="controls">
+            <button class="control-btn" id="prevBtn">◀ PREVIOUS</button>
+            <button class="control-btn" id="playPauseBtn">⏸ PAUSE</button>
+            <button class="control-btn" id="nextBtn">NEXT ▶</button>
+            <button class="control-btn" id="randomBtn">🎲 RANDOM</button>
+        </div>
+    </div>
+
+    <script>
+        // Villain data
+        const villains = [
+            {
+                name: "DOCTOR DOOM",
+                subtitle: "Master of Magic and Science",
+                description: "Victor Von Doom, the armored monarch of Latveria, combines advanced technology with mystical powers to challenge the world's greatest heroes.",
+                image: "image1.jpeg"
+            },
+            {
+                name: "THANOS",
+                subtitle: "The Mad Titan",
+                description: "The most feared being in the universe, Thanos seeks cosmic balance through the power of the Infinity Stones.",
+                image: "image2.jpeg"
+            },
+            {
+                name: "KANG THE CONQUEROR",
+                subtitle: "Master of Time",
+                description: "A time-traveling despot from the 31st century who has conquered countless timelines and realities.",
+                image: "image3.jpeg"
+            },
+            {
+                name: "DORMAMMU",
+                subtitle: "Dark Dimension Overlord",
+                description: "An ancient entity from the Dark Dimension who seeks to merge all realities into his domain of eternal darkness.",
+                image: "image4.jpeg"
+            },
+            {
+                name: "ULTRON",
+                subtitle: "AI Gone Rogue",
+                description: "Created to protect humanity, Ultron became convinced that the only way to save Earth was to eliminate human life.",
+                image: "image5.jpeg"
+            },
+            {
+                name: "WANDA - SCARLET WITCH",
+                subtitle: "Grief-Torn Sorceress",
+                description: "Once a hero, Wanda's grief and reality-warping powers made her one of the most dangerous beings in existence.",
+                image: "image6.jpeg"
+            },
+            {
+                name: "KILLMONGER",
+                subtitle: "Wakandan Outcast",
+                description: "Erik Stevens challenged the very foundations of Wakanda with his revolutionary vision of global change.",
+                image: "image7.jpeg"
+            },
+            {
+                name: "HELA",
+                subtitle: "Goddess of Death",
+                description: "The firstborn of Odin, Hela commands the realm of the dead and possesses power that rivals the All-Father himself.",
+                image: "image8.jpeg"
+            },
+            {
+                name: "MYSTERIO",
+                subtitle: "Manipulator of Minds and Media",
+                description: "Quentin Beck uses advanced holographic technology to create elaborate illusions and manipulate reality itself.",
+                image: "image9.jpeg"
+            },
+            {
+                name: "LOKI",
+                subtitle: "God of Mischief",
+                description: "The trickster god of Asgard whose cunning mind and mastery of illusion make him unpredictable and dangerous.",
+                image: "image10.jpeg"
+            }
+        ];
+
+        class VillainSlideshow {
+            constructor() {
+                this.currentSlide = 0;
+                this.isPlaying = true;
+                this.interval = null;
+                this.autoPlayDelay = 4000;
+                
+                this.init();
+                this.createSlides();
+                this.createThumbnails();
+                this.setupEventListeners();
+                this.startAutoPlay();
+                this.initMatrixEffect();
+            }
+
+            init() {
+                this.sliderContainer = document.getElementById('sliderContainer');
+                this.slideCounter = document.getElementById('slideCounter');
+                this.progressBar = document.getElementById('progressBar');
+                this.villainGrid = document.getElementById('villainGrid');
+                this.mainTitle = document.getElementById('mainTitle');
+                this.soundWaves = document.getElementById('soundWaves');
+            }
+
+            createSlides() {
+                villains.forEach((villain, index) => {
+                    const slide = document.createElement('div');
+                    slide.className = `slide ${index === 0 ? 'active' : ''}`;
+                    slide.innerHTML = `
+                        <img src="${villain.image}" alt="${villain.name}">
+                        <div class="villain-info">
+                            <div class="villain-name">${villain.name}</div>
+                            <div class="villain-subtitle">${villain.subtitle}</div>
+                            <div class="villain-description">${villain.description}</div>
+                        </div>
+                    `;
+                    
+                    // Add click event for slide interaction
+                    slide.addEventListener('click', () => this.onSlideClick(index));
+                    
+                    this.sliderContainer.appendChild(slide);
+                });
+                
+                this.updateSlidePositions();
+            }
+
+            createThumbnails() {
+                villains.forEach((villain, index) => {
+                    const thumb = document.createElement('div');
+                    thumb.className = `villain-thumb ${index === 0 ? 'active' : ''}`;
+                    thumb.innerHTML = `<img src="${villain.image}" alt="${villain.name}">`;
+                    thumb.addEventListener('click', () => this.goToSlide(index));
+                    this.villainGrid.appendChild(thumb);
+                });
+            }
+
+            setupEventListeners() {
+                document.getElementById('prevBtn').addEventListener('click', () => this.previousSlide());
+                document.getElementById('nextBtn').addEventListener('click', () => this.nextSlide());
+                document.getElementById('playPauseBtn').addEventListener('click', () => this.togglePlayPause());
+                document.getElementById('randomBtn').addEventListener('click', () => this.randomSlide());
+
+                // Keyboard controls
+                document.addEventListener('keydown', (e) => {
+                    switch(e.key) {
+                        case 'ArrowLeft':
+                            this.previousSlide();
+                            break;
+                        case 'ArrowRight':
+                            this.nextSlide();
+                            break;
+                        case ' ':
+                            e.preventDefault();
+                            this.togglePlayPause();
+                            break;
+                        case 'r':
+                        case 'R':
+                            this.randomSlide();
+                            break;
+                    }
+                });
+
+                // Mouse wheel control
+                this.sliderContainer.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    if (e.deltaY > 0) {
+                        this.nextSlide();
+                    } else {
+                        this.previousSlide();
+                    }
+                });
+            }
+
+            updateSlidePositions() {
+                const slides = this.sliderContainer.querySelectorAll('.slide');
+                const thumbs = this.villainGrid.querySelectorAll('.villain-thumb');
+
+                slides.forEach((slide, index) => {
+                    slide.classList.remove('active', 'next', 'prev');
+                    
+                    if (index === this.currentSlide) {
+                        slide.classList.add('active');
+                    } else if (index === (this.currentSlide + 1) % villains.length) {
+                        slide.classList.add('next');
+                    } else if (index === (this.currentSlide - 1 + villains.length) % villains.length) {
+                        slide.classList.add('prev');
+                    }
+                });
+
+                // Update thumbnails
+                thumbs.forEach((thumb, index) => {
+                    thumb.classList.toggle('active', index === this.currentSlide);
+                });
+
+                // Update counter
+                this.slideCounter.textContent = `${String(this.currentSlide + 1).padStart(2, '0')} / ${villains.length}`;
+                
+                // Update progress bar
+                this.progressBar.style.width = `${((this.currentSlide + 1) / villains.length) * 100}%`;
+                
+                // Trigger glitch effect on title
+                this.triggerGlitchEffect();
+                
+                // Animate sound waves
+                this.animateSoundWaves();
+            }
+
+            goToSlide(index) {
+                if (index !== this.currentSlide) {
+                    this.currentSlide = index;
+                    this.updateSlidePositions();
+                    this.resetAutoPlay();
+                }
+            }
+
+            nextSlide() {
+                this.currentSlide = (this.currentSlide + 1) % villains.length;
+                this.updateSlidePositions();
+                this.resetAutoPlay();
+            }
+
+            previousSlide() {
+                this.currentSlide = (this.currentSlide - 1 + villains.length) % villains.length;
+                this.updateSlidePositions();
+                this.resetAutoPlay();
+            }
+
+            randomSlide() {
+                let randomIndex;
+                do {
+                    randomIndex = Math.floor(Math.random() * villains.length);
+                } while (randomIndex === this.currentSlide);
+                
+                this.goToSlide(randomIndex);
+            }
+
+            onSlideClick(index) {
+                if (index === this.currentSlide) {
+                    this.togglePlayPause();
+                } else {
+                    this.goToSlide(index);
+                }
+            }
+
+            togglePlayPause() {
+                const btn = document.getElementById('playPauseBtn');
+                if (this.isPlaying) {
+                    this.stopAutoPlay();
+                    btn.textContent = '▶ PLAY';
+                } else {
+                    this.startAutoPlay();
+                    btn.textContent = '⏸ PAUSE';
+                }
+                this.isPlaying = !this.isPlaying;
+            }
+
+            startAutoPlay() {
+                this.stopAutoPlay();
+                this.interval = setInterval(() => {
+                    this.nextSlide();
+                }, this.autoPlayDelay);
+            }
+
+            stopAutoPlay() {
+                if (this.interval) {
+                    clearInterval(this.interval);
+                    this.interval = null;
+                }
+            }
+
+            resetAutoPlay() {
+                if (this.isPlaying) {
+                    this.startAutoPlay();
+                }
+            }
+
+            triggerGlitchEffect() {
+                this.mainTitle.classList.add('glitch');
+                setTimeout(() => {
+                    this.mainTitle.classList.remove('glitch');
+                }, 300);
+            }
+
+            animateSoundWaves() {
+                const waves = this.soundWaves.querySelectorAll('.wave');
+                waves.forEach((wave, index) => {
+                    wave.style.animationDelay = `${index * 0.1}s`;
+                });
+            }
+
+            initMatrixEffect() {
+                const canvas = document.getElementById('matrixCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                
+                const columns = Math.floor(canvas.width / 20);
+                const drops = Array(columns).fill(1);
+                
+                const drawMatrix = () => {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    ctx.fillStyle = '#ff0000';
+                    ctx.font = '15px monospace';
+                    
+                    for (let i = 0; i < drops.length; i++) {
+                        const text = String.fromCharCode(Math.random() * 128);
+                        ctx.fillText(text, i * 20, drops[i] * 20);
+                        
+                        if (drops[i] * 20 > canvas.height && Math.random() > 0.975) {
+                            drops[i] = 0;
+                        }
+                        drops[i]++;
+                    }
+                };
+                
+                setInterval(drawMatrix, 35);
+                
+                window.addEventListener('resize', () => {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                });
+            }
+        }
+
+        // Initialize the slideshow when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new VillainSlideshow();
+        });
+    </script>
+</body>
+</html>
